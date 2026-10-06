@@ -341,7 +341,7 @@
 
   let last = 0, raf = 0;
   function loop(time) {
-    const dt = Math.min(0.05, (time - last) / 1000 || 0);
+    const dt = Math.min(0.05, Math.max(0, (time - last) / 1000 || 0));
     last = time;
     girls.forEach(g => update(g, dt));
     draw(time);
