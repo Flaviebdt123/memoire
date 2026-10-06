@@ -268,15 +268,12 @@
       (!f.person || a.responsable === f.person) &&
       (!f.validation || a.validation === f.validation) &&
       (!f.search || [a.titre, a.auteurs, a.concepts, a.revue].join(" ").toLowerCase().includes(f.search.toLowerCase())));
-    arts.sort((a, b) => (a.auteurs || "").localeCompare(b.auteurs || "", "fr"));
+    // Dans chaque axe : regroupé par lectrice, puis par auteur.
+    const personRank = a => { const i = TEAM.findIndex(p => p.id === a.responsable); return i < 0 ? TEAM.length : i; };
+    arts.sort((a, b) => personRank(a) - personRank(b) || (a.auteurs || "").localeCompare(b.auteurs || "", "fr"));
 
-    const research = Store.all("article").filter(a => a.type === "recherche");
-    const counts = VALIDATION.map(v => `<button class="${f.validation === v.value ? "on" : ""}" data-filter-validation="${v.value}">${v.label} <b>${Store.all("article").filter(a => a.validation === v.value).length}</b></button>`).join("");
-
-    return pageHead("Bibliographie", `${research.length} articles de recherche · ${research.filter(a => a.validation === "valide").length} validés par la prof · objectif 15 (janvier) puis 18 (mai)`,
-      `<button class="btn" data-action="biblio-export">Bibliographie formatée</button><button class="btn primary" data-new="article">+ Article</button>`) +
-      `<div class="toolbar">${personFilter()}<div class="seg" role="group" aria-label="Filtrer par validation"><button class="${!f.validation ? "on" : ""}" data-filter-validation="">Toutes</button>${counts}</div><input type="search" class="search" placeholder="Titre, auteur, concept…" value="${esc(f.search)}" data-search></div>` +
-      (arts.length ? `<div class="cards">${arts.map(a => `
+    const themeGroups = [...THEMES, { value: "", label: "Non classés" }];
+    const card = a => `
         <article class="card art">
           <div class="art-top row-click" data-edit="${esc(a.id)}">
             <div class="art-meta">${badge(tf, a.type)} ${a.annee ? `<span class="muted small">${esc(a.annee)}</span>` : ""} ${a.annee && Number(a.annee) >= 2023 ? `<span class="tag">récent</span>` : ""}</div>
@@ -292,7 +289,22 @@
             ${personChip(a.responsable)}
             ${a.lien ? `<a class="small" href="${esc(a.lien)}" target="_blank" rel="noopener">Ouvrir ↗</a>` : ""}
           </div>
-        </article>`).join("")}</div>`
+        </article>`;
+
+    const research = Store.all("article").filter(a => a.type === "recherche");
+    const counts = VALIDATION.map(v => `<button class="${f.validation === v.value ? "on" : ""}" data-filter-validation="${v.value}">${v.label} <b>${Store.all("article").filter(a => a.validation === v.value).length}</b></button>`).join("");
+
+    return pageHead("Bibliographie", `${research.length} articles de recherche · ${research.filter(a => a.validation === "valide").length} validés par la prof · objectif 15 (janvier) puis 18 (mai)`,
+      `<button class="btn" data-action="biblio-export">Bibliographie formatée</button><button class="btn primary" data-new="article">+ Article</button>`) +
+      `<div class="toolbar">${personFilter()}<div class="seg" role="group" aria-label="Filtrer par validation"><button class="${!f.validation ? "on" : ""}" data-filter-validation="">Toutes</button>${counts}</div><input type="search" class="search" placeholder="Titre, auteur, concept…" value="${esc(f.search)}" data-search></div>` +
+      (arts.length ? themeGroups.map(g => {
+        const rows = arts.filter(a => (a.theme || "") === g.value);
+        if (!rows.length) return "";
+        return `<section class="phase">
+          <div class="phase-head"><h2>${esc(g.label)}</h2><span class="muted small">${rows.length} article${rows.length > 1 ? "s" : ""} · ${TEAM.map(p => `${esc(p.short)} ${rows.filter(a => a.responsable === p.id).length}`).join(" · ")}</span></div>
+          <div class="cards">${rows.map(card).join("")}</div>
+        </section>`;
+      }).join("")
         : `<div class="empty card"><p><strong>Aucun article pour l'instant.</strong></p><p class="muted">Ajoute chaque source lue : auteurs, année, revue, apport pour le mémoire. La prof pourra ensuite la valider ou demander une correction.</p><button class="btn primary" data-new="article">+ Ajouter un premier article</button></div>`);
   }
 
@@ -507,6 +519,31 @@
     }
   }
 
+  // Variante APA 7 (même fiche, autre mise en forme)
+  function formatRefApa(a) {
+    const names = (a.auteurs || "").split(";").map(s => s.trim()).filter(Boolean);
+    const au = names.length > 1 ? names.slice(0, -1).join(", ") + ", & " + names[names.length - 1] : names.join("");
+    const y = ` (${a.annee || "s.d."}). `;
+    const doi = a.lien ? " " + esc(a.lien) : "";
+    const end = t => /[.?!]$/.test(t) ? t : t + ".";
+    switch (a.type) {
+      case "recherche": {
+        const online = /advance online/i.test(a.pages || "");
+        const vol = a.volume ? `, <i>${esc(a.volume)}</i>${a.numero ? "(" + esc(a.numero) + ")" : ""}` : "";
+        const pages = a.pages && !online ? ", " + esc(a.pages) : "";
+        return `${esc(au)}${y}${esc(end(a.titre))} <i>${esc(a.revue || "")}</i>${vol}${pages}.${online ? " Advance online publication." : ""}${doi}`;
+      }
+      case "ouvrage":
+        return `${esc(au)}${y}<i>${esc(end(a.titre))}</i> ${esc(a.revue || "")}.${doi}`;
+      case "collectif":
+        return `${esc(au)}${y}${esc(end(a.titre))} In <i>${esc(a.revue || "")}</i>${a.pages ? " (pp. " + esc(a.pages) + ")" : ""}.${doi}`;
+      case "presse":
+        return `${esc(au)}${y}${esc(end(a.titre))} <i>${esc(a.revue || "")}</i>${a.pages ? ", " + esc(a.pages) : ""}.${doi}`;
+      default:
+        return "";
+    }
+  }
+
   function inTextCitation(a) {
     const names = (a.auteurs || "").split(";").map(s => s.split(",")[0].trim()).filter(Boolean);
     if (!names.length) return "";
@@ -515,6 +552,7 @@
   }
 
   function openBiblioExport() {
+    const apa = state.biblioFormat === "apa";
     const arts = Store.all("article").filter(a => a.type !== "web" && a.validation !== "refuse")
       .sort((a, b) => {
         const c = (a.auteurs || "").localeCompare(b.auteurs || "", "fr");
@@ -523,8 +561,9 @@
     $("#modal").innerHTML = `<div class="modal-back" data-action="close"></div>
       <div class="modal">
         <div class="modal-head"><h2>Bibliographie formatée</h2><button type="button" class="icon-btn" data-action="close" aria-label="Fermer">✕</button></div>
+        <div class="seg" role="group" aria-label="Norme de la bibliographie"><button class="${apa ? "" : "on"}" data-action="fmt-guide">Normes du guide</button><button class="${apa ? "on" : ""}" data-action="fmt-apa">APA 7</button></div>
         <p class="muted small">Ordre alphabétique d'auteur, le plus récent d'abord pour un même auteur (guide, 7.1). Les sites web ne figurent pas ici : ils vont en note de bas de page. Les articles refusés par la prof sont exclus.</p>
-        <div class="biblio-out" id="biblio-out">${arts.map(a => `<p>${formatRef(a)} <span class="cite">${esc(inTextCitation(a))}</span></p>`).join("") || "<p class='muted'>Aucun article.</p>"}</div>
+        <div class="biblio-out" id="biblio-out">${arts.map(a => `<p>${apa ? formatRefApa(a) : formatRef(a)} <span class="cite">${esc(inTextCitation(a))}</span></p>`).join("") || "<p class='muted'>Aucun article.</p>"}</div>
         <div class="modal-foot"><span class="grow"></span><button class="btn primary" data-action="copy-biblio">Copier</button></div>
       </div>`;
     $("#modal").classList.add("open");
@@ -565,6 +604,7 @@
     if (a === "close") closeModal();
     if (a === "pick-me") openPickMe();
     if (a === "biblio-export") openBiblioExport();
+    if (a === "fmt-guide" || a === "fmt-apa") { state.biblioFormat = a === "fmt-apa" ? "apa" : "guide"; openBiblioExport(); }
     if (a === "copy-biblio") {
       const el = $("#biblio-out");
       try {

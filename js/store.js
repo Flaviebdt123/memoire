@@ -3,7 +3,6 @@
 
 window.Store = (function () {
   const LOCAL_KEY = "memoire-items-v1";
-  const SEED_FLAG = "meta-seed-v1";
   const items = new Map();
   const listeners = [];
   let client = null;
@@ -55,13 +54,16 @@ window.Store = (function () {
       });
     }
 
-    if (!items.has(SEED_FLAG)) await seed();
+    for (const batch of window.SEED_BATCHES) {
+      if (!items.has(batch.flag)) await seed(batch);
+    }
   }
 
-  async function seed() {
-    const missing = window.SEED.filter(it => !items.has(it.id));
+  // Chaque lot n'est ajouté qu'une fois : supprimer un élément ne le fait pas revenir.
+  async function seed({ flag, items: batch }) {
+    const missing = batch.filter(it => !items.has(it.id));
     const now = new Date().toISOString();
-    const all = [...missing, { id: SEED_FLAG, kind: "meta" }].map(it => ({ ...it, updated_at: now }));
+    const all = [...missing, { id: flag, kind: "meta" }].map(it => ({ ...it, updated_at: now }));
     all.forEach(it => items.set(it.id, it));
     if (client) {
       const { error } = await client.from("items").upsert(all.map(itemToRow), { onConflict: "id", ignoreDuplicates: true });
