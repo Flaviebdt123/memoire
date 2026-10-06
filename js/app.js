@@ -78,19 +78,19 @@
 
   // ---------- Navigation ----------
   const VIEWS = [
-    { id: "dashboard", label: "Tableau de bord", icon: "◧" },
-    { id: "roadmap", label: "Feuille de route", icon: "☰" },
-    { id: "pitch", label: "Pitch", icon: "✎" },
-    { id: "biblio", label: "Bibliographie", icon: "❐" },
-    { id: "concepts", label: "Concepts & hypothèses", icon: "◇" },
-    { id: "terrain", label: "Terrain", icon: "◎" },
-    { id: "redaction", label: "Rédaction", icon: "¶" },
-    { id: "tuteur", label: "Tuteur", icon: "✉" },
+    { id: "dashboard", label: "Tableau de bord" },
+    { id: "roadmap", label: "Feuille de route" },
+    { id: "pitch", label: "Pitch" },
+    { id: "biblio", label: "Bibliographie" },
+    { id: "concepts", label: "Concepts & hypothèses" },
+    { id: "terrain", label: "Terrain" },
+    { id: "redaction", label: "Rédaction" },
+    { id: "tuteur", label: "Tuteur" },
   ];
 
   function renderNav() {
-    $("#nav").innerHTML = VIEWS.map(v =>
-      `<button class="nav-item ${state.view === v.id ? "active" : ""}" data-view="${v.id}"><span class="nav-icon" aria-hidden="true">${v.icon}</span>${v.label}</button>`
+    $("#nav").innerHTML = VIEWS.map((v, i) =>
+      `<button class="nav-item ${state.view === v.id ? "active" : ""}" data-view="${v.id}"><span class="nav-icon" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>${v.label}</button>`
     ).join("");
     const me = person(state.me);
     $("#me").innerHTML = me

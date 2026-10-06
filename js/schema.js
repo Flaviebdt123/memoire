@@ -7,9 +7,9 @@ window.PROBLEMATIQUE =
   "crédibles capables de restaurer la confiance envers la marque ?";
 
 window.TEAM = [
-  { id: "anaelle", name: "Anaelle Scintract", short: "Anaelle", role: "Assistante marketing opérations · Spengler Medical", color: "#7c5cff" },
-  { id: "anna", name: "Anna Scerri", short: "Anna", role: "Category manager enseigne · Panzani", color: "#e0662f" },
-  { id: "flavie", name: "Flavie Boudot", short: "Flavie", role: "Cheffe de projet go-to-market · Bioderma (NAOS)", color: "#1f9d8b" },
+  { id: "anaelle", name: "Anaelle Scintract", short: "Anaelle", role: "Assistante marketing opérations · Spengler Medical", color: "#8b7f9f" },
+  { id: "anna", name: "Anna Scerri", short: "Anna", role: "Category manager enseigne · Panzani", color: "#b9825a" },
+  { id: "flavie", name: "Flavie Boudot", short: "Flavie", role: "Cheffe de projet go-to-market · Bioderma (NAOS)", color: "#7c9584" },
 ];
 
 window.PERSON_OPTIONS = [
