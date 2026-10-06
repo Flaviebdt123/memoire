@@ -76,7 +76,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--surface-2); 
 .mode { font: 400 10.5px var(--mono); letter-spacing: .05em; text-transform: uppercase; }
 .mode.ok { color: var(--ok); }
 .mode.warn { color: var(--warn); }
-.main { padding: 48px clamp(16px, 5vw, 64px) 96px; max-width: 1220px; width: 100%; }
+.main { padding: 48px clamp(16px, 5vw, 64px) 128px; max-width: 1220px; width: 100%; }
 
 /* Header & sections */
 .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 36px; padding-bottom: 22px; border-bottom: 1px solid var(--line-strong); flex-wrap: wrap; }
@@ -243,6 +243,14 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
 .biblio-out p { margin-bottom: 8px; padding-left: 2em; text-indent: -2em; }
 .cite { font: 400 11px var(--mono); color: var(--muted); margin-left: 6px; }
 
+/* Filles en pixel */
+.pixel-strip { position: fixed; left: 250px; right: 0; bottom: 0; height: 96px; z-index: 5; pointer-events: none; }
+.pixel-strip canvas { display: block; }
+.pixel-girl { all: unset; position: absolute; left: 0; top: 0; width: 36px; height: 57px; cursor: pointer; pointer-events: auto; }
+.pixel-girl:focus-visible { outline: 1px dashed var(--text); outline-offset: 2px; }
+.pixel-toggle { all: unset; cursor: pointer; font: 400 10.5px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.pixel-toggle:hover { color: var(--text); }
+
 /* Responsive */
 @media (max-width: 1000px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
@@ -258,7 +266,8 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
   .nav-item.active { border-bottom-color: var(--text); }
   .nav-item:hover { padding-left: 0; }
   .side-foot { flex-direction: row; justify-content: space-between; align-items: center; margin: 0; }
-  .main { padding: 28px 16px 60px; }
+  .main { padding: 28px 16px 120px; }
+  .pixel-strip { left: 0; }
   .problem { padding: 22px; }
   .problem p { font-size: 19px; }
   h1 { font-size: 30px; }
