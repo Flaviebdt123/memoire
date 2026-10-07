@@ -448,7 +448,7 @@
     return `<details class="card guide-item" id="${sec.id}" data-guide="${sec.id}" ${state.guideOpen.has(sec.id) ? "open" : ""}>
       <summary><span class="guide-title">${esc(sec.titre)}</span><span class="tag">${esc(cat ? cat.label : "")}</span></summary>
       <ul class="guide-points">${sec.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
-      <p class="guide-src">Source : ${sec.source.map(([label, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`).join(" · ")}</p>
+      <p class="guide-src">Source : ${sec.source.map(([label, url]) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>` : esc(label)).join(" · ")}</p>
     </details>`;
   }
 
