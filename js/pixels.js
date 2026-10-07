@@ -1,6 +1,6 @@
 // Les trois filles en pixel qui se baladent en bas du site.
 // Flavie fait des croche-pieds, Anna tire les cheveux, Anaelle met des claques.
-// Cliquer sur une fille la lance sur la plus proche. Aucune donnée n'est enregistrée hormis afficher/masquer.
+// Cliquer sur une fille ouvre un message pour elle (voir app.js), d'où on peut aussi la lancer. Aucune donnée n'est enregistrée hormis afficher/masquer.
 
 (function () {
   const S = 3;           // taille d'un pixel à l'écran (px)
@@ -120,8 +120,8 @@
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "pixel-girl";
-    btn.title = `${p.short} ${MOVES[p.id].label}`;
-    btn.setAttribute("aria-label", `${p.short} : ${MOVES[p.id].label}`);
+    btn.title = `Écrire à ${p.short}`;
+    btn.setAttribute("aria-label", `Écrire à ${p.short}`);
     strip.appendChild(btn);
     const g = {
       id: p.id, name: p.short, color: p.color, btn,
@@ -130,7 +130,9 @@
       target: null, hit: false, vx: 0, fallDir: 1, fallP: 0, blush: 0,
       bubble: null, bubbleT: 0,
     };
-    btn.addEventListener("click", () => provoke(g, true));
+    btn.addEventListener("click", () => document.dispatchEvent(new CustomEvent("pixel-girl", {
+      detail: { id: g.id, move: MOVES[g.id].label, provoke: () => provoke(g, true), say: text => say(g, text, 2) },
+    })));
     return g;
   });
 

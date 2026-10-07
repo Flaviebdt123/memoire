@@ -9,6 +9,8 @@
     view: readPref(VIEW_KEY) || "dashboard",
     me: readPref(ME_KEY) || "",
     filters: { person: "", statut: "", search: "" },
+    conv: "groupe",
+    drafts: {},
   };
 
   // ---------- Utilitaires ----------
@@ -86,11 +88,12 @@
     { id: "terrain", label: "Terrain" },
     { id: "redaction", label: "Rédaction" },
     { id: "tuteur", label: "Tuteur" },
+    { id: "messages", label: "Messages" },
   ];
 
   function renderNav() {
     $("#nav").innerHTML = VIEWS.map((v, i) =>
-      `<button class="nav-item ${state.view === v.id ? "active" : ""}" data-view="${v.id}"><span class="nav-icon" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>${v.label}</button>`
+      `<button class="nav-item ${state.view === v.id ? "active" : ""}" data-view="${v.id}"><span class="nav-icon" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>${v.label}${v.id === "messages" && unreadCount() ? `<span class="nav-count">${unreadCount()}</span>` : ""}</button>`
     ).join("");
     const me = person(state.me);
     $("#me").innerHTML = me
@@ -104,8 +107,10 @@
   // ---------- Vues ----------
   function render() {
     renderNav();
-    const fn = { dashboard, roadmap, pitch, biblio, concepts, terrain, redaction, tuteur }[state.view] || dashboard;
+    const fn = { dashboard, roadmap, pitch, biblio, concepts, terrain, redaction, tuteur, messages }[state.view] || dashboard;
+    const chatFocused = document.activeElement && document.activeElement.dataset.chat !== undefined;
     $("#main").innerHTML = fn();
+    if (state.view === "messages") afterMessages(chatFocused);
   }
 
   function pageHead(title, sub, actions = "") {
@@ -432,6 +437,155 @@
         : `<p class="empty">Note ici chaque rendez-vous ou mail : retours du tuteur et actions décidées.</p>`}`;
   }
 
+  // ---------- Messagerie ----------
+  // Un message : { kind: "message", from, to: "groupe" | id, text, at }.
+  // Lu / non lu : chacune a sa fiche "read-<id>" avec, par conversation, la date du dernier message lu.
+  const readState = () => (Store.get("read-" + state.me) || {}).convs || {};
+  const convOf = m => m.to === "groupe" ? "groupe" : m.from === state.me ? m.to : m.from;
+  const isUnreadForMe = m => !!state.me && m.from !== state.me && (m.to === "groupe" || m.to === state.me) && (m.at || "") > (readState()[convOf(m)] || "");
+  const unreadCount = () => Store.all("message").filter(isUnreadForMe).length;
+
+  function inConv(m, conv) {
+    if (conv === "groupe") return m.to === "groupe";
+    return (m.from === state.me && m.to === conv) || (m.from === conv && m.to === state.me);
+  }
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return d.toISOString().slice(0, 10) === todayISO() ? time : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " · " + time;
+  }
+
+  const msgText = t => esc(t).replace(/\n/g, "<br>");
+  const convLabel = conv => conv === "groupe" ? "Les 3" : person(conv).short;
+
+  function messages() {
+    if (!state.me) return pageHead("Messages") + `<div class="card empty"><p>Dis-nous d'abord qui tu es.</p><button class="btn primary" data-action="pick-me">Choisir</button></div>`;
+    const all = Store.all("message").sort((a, b) => (a.at || "").localeCompare(b.at || ""));
+    const convs = ["groupe", ...TEAM.filter(p => p.id !== state.me).map(p => p.id)];
+    if (!convs.includes(state.conv)) state.conv = "groupe";
+
+    const list = convs.map(c => {
+      const ms = all.filter(m => inConv(m, c));
+      const last = ms[ms.length - 1];
+      const unread = ms.filter(isUnreadForMe).length;
+      const p = person(c);
+      return `<button class="conv ${state.conv === c ? "on" : ""}" data-conv="${c}">
+        <span class="avatar ${p ? "" : "avatar-group"}" style="--c:${p ? p.color : "var(--text)"}">${p ? p.short[0] : "3"}</span>
+        <span class="conv-main"><strong>${c === "groupe" ? "Groupe" : esc(p.short)}</strong>
+          <span class="conv-last">${last ? (last.from === state.me ? "Toi : " : c === "groupe" ? esc(person(last.from).short) + " : " : "") + esc(last.text) : "Aucun message"}</span></span>
+        ${unread ? `<span class="nav-count">${unread}</span>` : ""}
+      </button>`;
+    }).join("");
+
+    const thread = all.filter(m => inConv(m, state.conv));
+    let prevFrom = "";
+    const bubbles = thread.map(m => {
+      const mine = m.from === state.me;
+      const p = person(m.from);
+      const showName = !mine && state.conv === "groupe" && prevFrom !== m.from;
+      prevFrom = m.from;
+      return `<div class="msg ${mine ? "mine" : ""}" style="--c:${p ? p.color : "var(--muted)"}">
+        ${showName ? `<span class="msg-name">${esc(p.short)}</span>` : ""}
+        <div class="msg-bubble">${msgText(m.text)}</div>
+        <span class="msg-time">${fmtTime(m.at)}</span>
+      </div>`;
+    }).join("");
+
+    const to = state.conv === "groupe" ? "au groupe" : "à " + convLabel(state.conv);
+    return pageHead("Messages", state.conv === "groupe" ? "Discussion à trois." : `Conversation avec ${esc(convLabel(state.conv))}. Elle aura une notification en ouvrant le site.`) +
+      (Store.shared ? "" : `<p class="hint-line">Mode démo : les messages restent sur cet appareil. Ils arriveront chez les autres une fois Supabase configuré (voir README).</p>`) +
+      `<section class="chat">
+        <nav class="conv-list" aria-label="Conversations">${list}</nav>
+        <div class="thread-wrap">
+          <div class="thread" id="thread">${bubbles || `<p class="empty">Pas encore de message. Lance la conversation !</p>`}</div>
+          <form class="composer" data-chat-form="${state.conv}">
+            <textarea data-chat rows="1" placeholder="Écrire ${esc(to)}…" aria-label="Message">${esc(state.drafts[state.conv] || "")}</textarea>
+            <button type="submit" class="btn primary">Envoyer</button>
+          </form>
+        </div>
+      </section>`;
+  }
+
+  function afterMessages(refocus) {
+    const th = $("#thread");
+    if (th) th.scrollTop = th.scrollHeight;
+    const ta = $("[data-chat]");
+    if (ta && refocus) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    // Marquer comme lus les messages affichés
+    const unread = Store.all("message").filter(m => isUnreadForMe(m) && inConv(m, state.conv));
+    if (unread.length) {
+      const latest = unread.map(m => m.at).sort().pop();
+      setTimeout(() => Store.save({ id: "read-" + state.me, kind: "read", convs: { ...readState(), [state.conv]: latest } }), 0);
+    }
+  }
+
+  async function sendMessage(to, text) {
+    text = text.trim();
+    if (!text || !state.me) return false;
+    await Store.save({ kind: "message", from: state.me, to, text, at: new Date().toISOString() });
+    return true;
+  }
+
+  function openConv(conv) {
+    state.conv = conv;
+    closeModal();
+    setView("messages");
+  }
+
+  // Pop-up « X t'a envoyé un message » : à l'ouverture de la session et à chaque nouveau message privé.
+  const notified = new Set();
+  function checkInbox() {
+    if (!state.me || $("#modal").classList.contains("open")) return;
+    if (state.view === "messages") return;
+    const fresh = Store.all("message")
+      .filter(m => m.to === state.me && isUnreadForMe(m) && !notified.has(m.id))
+      .sort((a, b) => (a.at || "").localeCompare(b.at || ""));
+    if (!fresh.length) return;
+    fresh.forEach(m => notified.add(m.id));
+    const senders = [...new Set(fresh.map(m => m.from))];
+    const names = senders.map(id => person(id).short);
+    const who = names.length > 1 ? names.slice(0, -1).join(", ") + " et " + names[names.length - 1] : names[0];
+    const last = fresh[fresh.length - 1];
+    $("#modal").innerHTML = `<div class="modal-back" data-action="close"></div>
+      <div class="modal narrow inbox">
+        <div class="modal-head"><h2>${esc(who)} ${senders.length > 1 ? "t'ont" : "t'a"} envoyé ${fresh.length > 1 ? "des messages" : "un message"}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Fermer">✕</button></div>
+        <div class="inbox-list">${fresh.map(m => `<div class="msg" style="--c:${person(m.from).color}">
+          <span class="msg-name">${esc(person(m.from).short)} · ${fmtTime(m.at)}</span>
+          <div class="msg-bubble">${msgText(m.text)}</div></div>`).join("")}</div>
+        <div class="modal-foot"><span class="grow"></span>
+          <button type="button" class="btn" data-action="close">Plus tard</button>
+          <button type="button" class="btn primary" data-conv="${last.from}">Répondre à ${esc(person(last.from).short)}</button>
+        </div>
+      </div>`;
+    $("#modal").classList.add("open");
+  }
+
+  // Clic sur une fille en pixel : lui écrire directement (ou la lancer sur une autre).
+  document.addEventListener("pixel-girl", e => {
+    const { id, provoke, say, move } = e.detail;
+    if (!state.me) { openPickMe(); return; }
+    const p = person(id);
+    const self = id === state.me;
+    const to = self ? "groupe" : id;
+    $("#modal").innerHTML = `<div class="modal-back" data-action="close"></div>
+      <form class="modal narrow inbox" data-quick-msg="${to}">
+        <div class="modal-head"><h2>${self ? "écrire au groupe" : "écrire à " + esc(p.short)}</h2><button type="button" class="icon-btn" data-action="close" aria-label="Fermer">✕</button></div>
+        <textarea name="text" rows="4" placeholder="${self ? "Un message pour Anna et Flavie…" : "Ton message pour " + esc(p.short) + "…"}" required></textarea>
+        <p class="muted small">${self ? "" : esc(p.short) + " aura un pop-up en ouvrant le site."}</p>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-action="provoke">${esc(p.short)} ${esc(move)}</button>
+          <span class="grow"></span>
+          <button type="submit" class="btn primary">Envoyer</button>
+        </div>
+      </form>`;
+    $("#modal").classList.add("open");
+    const form = $("[data-quick-msg]");
+    form._provoke = provoke;
+    form._say = say;
+    form.elements.text.focus();
+  });
+
   // ---------- Formulaire (modale) ----------
   function openForm(kind, id) {
     const def = COLLECTIONS[kind];
@@ -480,6 +634,8 @@
   function closeModal() {
     $("#modal").classList.remove("open");
     $("#modal").innerHTML = "";
+    // Des données ont changé pendant que la fenêtre était ouverte
+    if (state.stale) { state.stale = false; render(); }
   }
 
   async function submitForm(form) {
@@ -591,17 +747,19 @@
   }
 
   document.addEventListener("click", async e => {
-    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-filter-person],[data-filter-statut],[data-filter-validation]");
+    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-conv],[data-filter-person],[data-filter-statut],[data-filter-validation]");
     if (!t) return;
     if (t.dataset.view) { e.preventDefault(); setView(t.dataset.view); return; }
     if (t.dataset.new) { openForm(t.dataset.new); return; }
     if (t.dataset.edit) { const it = Store.get(t.dataset.edit); if (it) openForm(it.kind, it.id); return; }
-    if (t.dataset.me) { state.me = t.dataset.me; writePref(ME_KEY, state.me); closeModal(); render(); return; }
+    if (t.dataset.me) { state.me = t.dataset.me; writePref(ME_KEY, state.me); closeModal(); render(); checkInbox(); return; }
+    if (t.dataset.conv) { openConv(t.dataset.conv); return; }
     if (t.dataset.filterPerson !== undefined) { state.filters.person = t.dataset.filterPerson; render(); return; }
     if (t.dataset.filterStatut !== undefined) { state.filters.statut = t.dataset.filterStatut; render(); return; }
     if (t.dataset.filterValidation !== undefined) { state.filters.validation = t.dataset.filterValidation; render(); return; }
     const a = t.dataset.action;
     if (a === "close") closeModal();
+    if (a === "provoke") { const f = t.closest("form"); closeModal(); f._provoke(); }
     if (a === "pick-me") openPickMe();
     if (a === "biblio-export") openBiblioExport();
     if (a === "fmt-guide" || a === "fmt-apa") { state.biblioFormat = a === "fmt-apa" ? "apa" : "guide"; openBiblioExport(); }
@@ -627,8 +785,22 @@
     }
   });
 
-  document.addEventListener("submit", e => {
-    if (e.target.dataset.form) { e.preventDefault(); submitForm(e.target); }
+  document.addEventListener("submit", async e => {
+    const f = e.target;
+    if (f.dataset.form) { e.preventDefault(); submitForm(f); }
+    if (f.dataset.chatForm) {
+      e.preventDefault();
+      const conv = f.dataset.chatForm;
+      const text = f.querySelector("[data-chat]").value;
+      state.drafts[conv] = "";
+      f.querySelector("[data-chat]").value = "";
+      await sendMessage(conv, text);
+    }
+    if (f.dataset.quickMsg) {
+      e.preventDefault();
+      const say = f._say;
+      if (await sendMessage(f.dataset.quickMsg, f.elements.text.value)) { closeModal(); say("message envoyé ✉"); }
+    }
   });
 
   document.addEventListener("change", async e => {
@@ -645,6 +817,7 @@
 
   let searchTimer;
   document.addEventListener("input", e => {
+    if (e.target.dataset.chat !== undefined) { state.drafts[state.conv] = e.target.value; return; }
     if (e.target.dataset.search === undefined) return;
     clearTimeout(searchTimer);
     const value = e.target.value;
@@ -657,6 +830,12 @@
   });
 
   document.addEventListener("keydown", e => {
+    // Entrée envoie, Maj+Entrée va à la ligne
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && (e.target.dataset.chat !== undefined || e.target.closest?.("[data-quick-msg]"))) {
+      e.preventDefault();
+      e.target.form.requestSubmit();
+      return;
+    }
     if (e.key === "Escape" && $("#modal").classList.contains("open") && state.me) closeModal();
   });
 
@@ -664,13 +843,14 @@
   Store.onChange(() => {
     const active = document.activeElement;
     const typing = active && (active.dataset.pitch || active.dataset.setting || active.dataset.search !== undefined) && $("#main").contains(active);
-    if ($("#modal").classList.contains("open") || typing) { renderNav(); return; }
+    if ($("#modal").classList.contains("open") || typing) { state.stale = true; renderNav(); return; }
     render();
+    checkInbox();
   });
 
   // ---------- Démarrage ----------
   Store.init()
-    .then(() => { render(); if (!state.me) openPickMe(); })
+    .then(() => { render(); if (!state.me) openPickMe(); else checkInbox(); })
     .catch(err => {
       console.error(err);
       $("#main").innerHTML = `<div class="card empty"><h2>Connexion à la base impossible</h2><p class="muted">${esc(err.message || err)}</p><p>Vérifie les valeurs de <code>js/config.js</code> et que le script <code>supabase/schema.sql</code> a bien été exécuté.</p></div>`;

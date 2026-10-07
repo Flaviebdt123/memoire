@@ -243,6 +243,59 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
 .biblio-out p { margin-bottom: 8px; padding-left: 2em; text-indent: -2em; }
 .cite { font: 400 11px var(--mono); color: var(--muted); margin-left: 6px; }
 
+/* Messagerie */
+.nav-count { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; font: 500 10.5px var(--mono); background: var(--text); color: var(--bg); border-radius: 9px; }
+.chat { display: grid; grid-template-columns: 240px minmax(0, 1fr); border: 1px solid var(--line); background: var(--surface); height: min(68vh, 640px); }
+.conv-list { display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow-y: auto; }
+.conv { all: unset; cursor: pointer; display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.conv:hover { background: var(--surface-2); }
+.conv.on { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--text); }
+.conv:focus-visible { outline: 1px solid var(--text); outline-offset: -1px; }
+.conv-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.conv-main strong { font-weight: 500; }
+.conv-last { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar-group { background: var(--text); color: var(--bg); font: 400 12px var(--mono); }
+.thread-wrap { display: flex; flex-direction: column; min-height: 0; }
+.thread { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 4px; }
+.thread .empty { margin: auto; }
+.msg { display: flex; flex-direction: column; align-items: flex-start; max-width: 75%; }
+.msg.mine { align-self: flex-end; align-items: flex-end; }
+.msg-name { font: 400 10.5px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; display: flex; gap: 6px; align-items: center; }
+.msg-name::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.msg-bubble { padding: 9px 13px; background: var(--bg); border: 1px solid var(--line); border-left: 2px solid var(--c); white-space: normal; overflow-wrap: anywhere; }
+.msg.mine .msg-bubble { background: var(--text); color: var(--bg); border-color: var(--text); }
+.msg-time { font: 400 10px var(--mono); color: var(--muted); margin: 3px 2px 6px; }
+.composer { display: flex; gap: 10px; align-items: flex-end; padding: 14px 16px; border-top: 1px solid var(--line); }
+.composer textarea { resize: none; max-height: 140px; min-height: 42px; }
+.inbox .modal-head h2 { text-transform: none; }
+.inbox-list { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow-y: auto; }
+.inbox-list .msg { max-width: 100%; }
+[data-quick-msg] textarea { margin-bottom: 8px; }
+
+/* Assistant */
+.assistant-btn { position: fixed; right: 24px; bottom: 108px; z-index: 8; display: inline-flex; gap: 8px; align-items: center; font: 500 11.5px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; padding: 13px 18px; border: 1px solid var(--text); background: var(--text); color: var(--bg); cursor: pointer; }
+.assistant-btn:hover, .assistant-btn.on { background: var(--bg); color: var(--text); }
+.assistant { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 9; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--line-strong); }
+.assistant[hidden] { display: none; }
+.as-head { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 16px; border-bottom: 1px solid var(--line); }
+.as-head h2 { font: 300 26px/1 var(--font); letter-spacing: -.02em; text-transform: none; }
+.as-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+.as-q { align-self: flex-end; max-width: 85%; padding: 9px 13px; background: var(--text); color: var(--bg); margin-top: 8px; }
+.as-answer { margin: 4px 0; }
+.as-card { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-left: 2px solid var(--text); background: var(--bg); }
+.as-card:hover { border-color: var(--text); }
+.as-card:focus-visible { outline: 1px solid var(--text); outline-offset: 2px; }
+.as-card strong { font-weight: 500; }
+.as-meta { font: 400 11px var(--mono); color: var(--muted); }
+.as-reason { font-size: 13.5px; }
+.as-tag { align-self: flex-start; font: 400 10px var(--mono); text-transform: uppercase; letter-spacing: .05em; border: 1px solid var(--line); padding: 0 6px; color: var(--muted); }
+.as-note { font: 400 10.5px var(--mono); color: var(--muted); }
+.as-suggest { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.as-suggest button { all: unset; cursor: pointer; padding: 10px 12px; border: 1px solid var(--line); font-size: 13.5px; }
+.as-suggest button:hover { border-color: var(--text); }
+.as-form { display: flex; gap: 10px; align-items: flex-end; padding: 14px 24px 20px; border-top: 1px solid var(--line); }
+.as-form textarea { resize: none; }
+
 /* Filles en pixel */
 .pixel-strip { position: fixed; left: 250px; right: 0; bottom: 0; height: 96px; z-index: 5; pointer-events: none; }
 .pixel-strip canvas { display: block; }
@@ -268,6 +321,13 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
   .side-foot { flex-direction: row; justify-content: space-between; align-items: center; margin: 0; }
   .main { padding: 28px 16px 120px; }
   .pixel-strip { left: 0; }
+  .assistant-btn { right: 16px; bottom: 104px; padding: 11px 14px; }
+  .chat { grid-template-columns: 1fr; height: auto; }
+  .conv-list { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .conv { border-bottom: 0; border-right: 1px solid var(--line); padding: 10px 14px; }
+  .conv-last { display: none; }
+  .thread { height: 55vh; flex: none; }
+  .msg { max-width: 90%; }
   .problem { padding: 22px; }
   .problem p { font-size: 19px; }
   h1 { font-size: 30px; }
