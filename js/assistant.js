@@ -7,9 +7,13 @@
   const history = []; // { q, loading, answer, results: [{ id, reason }], mode }
   const SUGGESTIONS = [
     "Un article sur le scepticisme envers les allégations santé",
-    "Une définition de la confiance envers la marque",
     "La théorie du signal appliquée aux labels",
+    "Combien de réponses faut-il au questionnaire ?",
+    "Comment rédiger l'introduction ?",
   ];
+
+  // Fiches de l'onglet Guide, présentées comme des « documents » pour la recherche
+  const guideDocs = () => (window.GUIDE_SECTIONS || []).map(g => ({ id: g.id, titre: g.titre, concepts: g.cat, apport: g.points.join(" ") }));
 
   // ---------- Recherche locale (sans IA) ----------
   const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -25,6 +29,11 @@
     ["marque", "brand", "brands"],
     ["consommateur", "consumer", "consumers", "acheteur"],
     ["greenwashing", "healthwashing", "tromperie", "deception"],
+    ["echantillon", "reponse", "repondant", "sample", "minimum"],
+    ["entretien", "interview", "entrevue"],
+    ["questionnaire", "enquete", "survey"],
+    ["hypothese", "proposition"],
+    ["citation", "citer", "apa", "bibliographie", "reference"],
   ].map(g => g.map(w => stem(w)));
 
   const tokens = s => norm(s).split(/[^a-z0-9]+/).filter(w => w.length > 2 && !STOP.has(w));
@@ -36,7 +45,7 @@
     const seen = new Set();
     const concepts = tokens(question).filter(t => !seen.has(stem(t)) && seen.add(stem(t)))
       .map(t => ({ label: t, stems: SYNONYMS.find(g => g.includes(stem(t))) || [stem(t)] }));
-    const scored = articles.map(a => {
+    const scored = articles.concat(guideDocs()).map(a => {
       let score = 0;
       const hits = new Set();
       for (const [field, weight] of Object.entries(WEIGHTS)) {
@@ -54,15 +63,12 @@
     history.push(entry);
     renderPanel();
     const articles = Store.all("article");
-    if (!articles.length) {
-      Object.assign(entry, { loading: false, answer: "La bibliographie est vide pour l'instant : ajoutez des articles et je pourrai les retrouver.", results: [] });
-      return renderPanel();
-    }
+    const guide = guideDocs().map(g => ({ id: g.id, titre: g.titre, texte: g.apport }));
     try {
       const r = await fetch("api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, articles }),
+        body: JSON.stringify({ question, articles, guide }),
       });
       const data = r.headers.get("content-type")?.includes("json") ? await r.json() : null;
       if (!r.ok || !data || data.error) throw new Error(data?.error || "indisponible");
@@ -71,7 +77,7 @@
       const results = localSearch(question, articles);
       Object.assign(entry, {
         loading: false, mode: "local", results,
-        answer: results.length ? "Voici les articles qui contiennent ces mots." : "Aucun article de la biblio ne contient ces mots. Essaie d'autres termes, ou en anglais.",
+        answer: results.length ? "Voici les articles et les fiches du guide qui contiennent ces mots." : "Rien dans la biblio ni dans le guide ne contient ces mots. Essaie d'autres termes, ou en anglais.",
       });
     }
     renderPanel();
@@ -100,6 +106,12 @@
   btn.addEventListener("click", () => open(panel.hidden));
 
   function articleCard(r) {
+    const g = (window.GUIDE_SECTIONS || []).find(x => x.id === r.id);
+    if (g) return `<button type="button" class="as-card" data-guide-open="${esc(g.id)}">
+      <span class="as-meta">Fiche du guide</span>
+      <strong>${esc(g.titre)}</strong>
+      ${r.reason ? `<span class="as-reason">${esc(r.reason)}</span>` : ""}
+    </button>`;
     const a = Store.get(r.id);
     if (!a) return "";
     const meta = [a.auteurs, a.annee, a.revue].filter(Boolean).map(esc).join(" · ");
@@ -122,7 +134,7 @@
         ${(h.results || []).map(articleCard).join("")}
         ${h.mode === "local" ? `<p class="as-note">Recherche par mots-clés : l'assistant IA n'est pas encore branché (voir README).</p>` : ""}`}
     `).join("") : `
-      <p class="muted">Pose une question, je ressors les articles de votre bibliographie (${count} article${count > 1 ? "s" : ""}) qui y répondent.</p>
+      <p class="muted">Pose une question : je ressors les articles de votre bibliographie (${count} article${count > 1 ? "s" : ""}) et les fiches du guide du mémoire qui y répondent.</p>
       <div class="as-suggest">${SUGGESTIONS.map(s => `<button type="button" data-ask="${esc(s)}">${esc(s)}</button>`).join("")}</div>`;
     const draft = panel.querySelector("textarea")?.value || "";
     panel.innerHTML = `
@@ -135,6 +147,7 @@
 
   panel.addEventListener("click", e => {
     if (e.target.closest("[data-as-close]")) return open(false);
+    if (e.target.closest("[data-guide-open]")) setTimeout(() => open(false), 0); // app.js ouvre la fiche
     const s = e.target.closest("[data-ask]");
     if (s) ask(s.dataset.ask);
   });

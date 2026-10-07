@@ -11,6 +11,8 @@
     filters: { person: "", statut: "", search: "" },
     conv: "groupe",
     drafts: {},
+    guideCat: "",
+    guideOpen: new Set(),
   };
 
   // ---------- Utilitaires ----------
@@ -81,6 +83,7 @@
   // ---------- Navigation ----------
   const VIEWS = [
     { id: "dashboard", label: "Tableau de bord" },
+    { id: "guide", label: "Guide du mémoire" },
     { id: "roadmap", label: "Feuille de route" },
     { id: "pitch", label: "Pitch" },
     { id: "biblio", label: "Bibliographie" },
@@ -107,7 +110,7 @@
   // ---------- Vues ----------
   function render() {
     renderNav();
-    const fn = { dashboard, roadmap, pitch, biblio, concepts, terrain, redaction, tuteur, messages }[state.view] || dashboard;
+    const fn = { dashboard, guide, roadmap, pitch, biblio, concepts, terrain, redaction, tuteur, messages }[state.view] || dashboard;
     const chatFocused = document.activeElement && document.activeElement.dataset.chat !== undefined;
     $("#main").innerHTML = fn();
     if (state.view === "messages") afterMessages(chatFocused);
@@ -437,6 +440,90 @@
         : `<p class="empty">Note ici chaque rendez-vous ou mail : retours du tuteur et actions décidées.</p>`}`;
   }
 
+  // ---------- Guide du mémoire (consignes du cours Boostcamp, voir js/guide.js) ----------
+  const wordCount = t => (String(t || "").trim().match(/\S+/g) || []).length;
+
+  function guideSection(sec) {
+    const cat = GUIDE_CATEGORIES.find(c => c.id === sec.cat);
+    return `<details class="card guide-item" id="${sec.id}" data-guide="${sec.id}" ${state.guideOpen.has(sec.id) ? "open" : ""}>
+      <summary><span class="guide-title">${esc(sec.titre)}</span><span class="tag">${esc(cat ? cat.label : "")}</span></summary>
+      <ul class="guide-points">${sec.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+      <p class="guide-src">Source : ${sec.source.map(([label, url]) => `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`).join(" · ")}</p>
+    </details>`;
+  }
+
+  function simulateur() {
+    return `<div class="card sim">
+      <h2>Simulateur de note finale</h2>
+      <div class="sim-row">
+        <label>RL intermédiaire <span class="muted small">coef. 2</span><input type="number" min="0" max="20" step="0.25" data-sim="2" placeholder="/20"></label>
+        <label>Mémoire écrit <span class="muted small">coef. 4</span><input type="number" min="0" max="20" step="0.25" data-sim="4" placeholder="/20"></label>
+        <label>Soutenance <span class="muted small">coef. 6</span><input type="number" min="0" max="20" step="0.25" data-sim="6" placeholder="/20"></label>
+      </div>
+      <p class="sim-out">Note finale : <b id="sim-total">—</b> / 20</p>
+    </div>`;
+  }
+
+  function resumeTool() {
+    const v = k => (Store.get("redac-" + k) || {}).value || "";
+    const counter = k => { const n = wordCount(v(k)); return `<span class="wc ${n && (n < 100 || n > 150) ? "late" : ""}" data-wc="${k}">${n} mots</span>`; };
+    return `<div class="card resume-tool">
+      <h2>Résumé / Abstract — brouillon partagé</h2>
+      <div class="form-grid">
+        <div class="field"><label>Résumé (français) ${counter("resumeFR")}</label><textarea rows="7" data-redac="resumeFR" placeholder="Sujet, objectifs, méthode, résultat principal, contribution principale (100 à 150 mots).">${esc(v("resumeFR"))}</textarea></div>
+        <div class="field"><label>Abstract (English) ${counter("resumeEN")}</label><textarea rows="7" data-redac="resumeEN" placeholder="Topic, objectives, method, main result, main contribution (100-150 words).">${esc(v("resumeEN"))}</textarea></div>
+        <div class="field"><label>Mots-clés (5 à 6, séparés par ;)</label><input type="text" data-redac="motsclesFR" value="${esc(v("motsclesFR"))}" placeholder="scepticisme ; allégations santé ; labels ; …"></div>
+        <div class="field"><label>Keywords</label><input type="text" data-redac="motsclesEN" value="${esc(v("motsclesEN"))}" placeholder="skepticism; health claims; labels; …"></div>
+      </div>
+    </div>`;
+  }
+
+  function pistesSujet() {
+    const existing = new Set(Store.all("concept").map(c => (c.nom || "").toLowerCase()));
+    return `<h2 class="section-title">Pistes pour notre sujet</h2>
+      <p class="muted small">Théories et variables repérées dans les fichiers Excel du module 3, filtrées pour notre problématique. À vérifier dans les articles d'origine avant de les citer.</p>
+      <div class="table">${GUIDE_THEORIES.map((t, i) => `<div class="trow">
+        <div class="tcell grow"><span class="ttitle">${esc(t.nom)} <span class="muted small">— ${esc(t.auteurs)}</span></span><span class="tdetail">${esc(t.idee)}</span></div>
+        <div class="tcell">${existing.has(t.nom.toLowerCase()) ? `<span class="badge tone-ok">Dans Concepts</span>` : `<button class="btn" data-add-theory="${i}">+ Concepts</button>`}</div>
+      </div>`).join("")}</div>
+      <p class="mt small muted">Variables souvent étudiées en marketing (fichier CONCEPTS / VARIABLES), proches de notre sujet :</p>
+      <div class="chips-wrap">${GUIDE_VARIABLES.map(v => `<span class="tag">${esc(v)}</span>`).join("")}</div>
+      <p class="small muted">Le scepticisme et la crédibilité du label ne figurent pas dans ce fichier : leurs échelles sont à prendre dans nos articles (ex. Obermiller & Spangenberg, 1998).</p>`;
+  }
+
+  function ressources() {
+    return `<h2 class="section-title">Ressources</h2>
+      <div class="cards">${GUIDE_RESOURCES.map(g => `<div class="card"><h2>${esc(g.groupe)}</h2>
+        <ul class="res-list">${g.liens.map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join("")}</ul></div>`).join("")}</div>`;
+  }
+
+  function guide() {
+    const cat = state.guideCat;
+    const q = (state.filters.search || "").toLowerCase();
+    const secs = GUIDE_SECTIONS.filter(s => (!cat || s.cat === cat) && (!q || (s.titre + " " + s.points.join(" ")).toLowerCase().includes(q)));
+    const seg = `<div class="seg" role="group" aria-label="Thèmes"><button class="${!cat ? "on" : ""}" data-guide-cat="">Tout</button>${GUIDE_CATEGORIES.map(c => `<button class="${cat === c.id ? "on" : ""}" data-guide-cat="${c.id}">${esc(c.label)}</button>`).join("")}</div>`;
+    const all = !cat && !q;
+    return pageHead("Guide du mémoire", "Synthèse des consignes du cours « Méthodologie de recherche » sur Boostcamp (guide 2026-2027 et fiches des modules, sans les quiz). Les documents originaux restent accessibles via les liens « Source ».",
+      `<a class="btn" href="${BOOSTCAMP_COURSE}" target="_blank" rel="noopener">Ouvrir Boostcamp</a>`) +
+      (all ? `<section class="card attention"><div class="eyebrow">Points d'attention</div><ul>${GUIDE_ATTENTION.map(a => `<li>${esc(a)}</li>`).join("")}</ul></section>` : "") +
+      `<div class="toolbar">${seg}<input type="search" class="search" placeholder="Rechercher une consigne…" value="${esc(state.filters.search)}" data-search></div>` +
+      (secs.length ? `<div class="guide-list">${secs.map(guideSection).join("")}</div>` : `<p class="empty">Aucune fiche ne correspond.</p>`) +
+      (all || cat === "calendrier" ? simulateur() : "") +
+      (all || cat === "fin" ? resumeTool() : "") +
+      (all || cat === "rl" ? pistesSujet() : "") +
+      (all ? ressources() : "");
+  }
+
+  function updateSim() {
+    const ins = [...document.querySelectorAll("[data-sim]")];
+    const filled = ins.filter(i => i.value !== "");
+    const out = $("#sim-total");
+    if (!out) return;
+    if (!filled.length) { out.textContent = "—"; return; }
+    const total = ins.reduce((s, i) => s + Number(i.value || 0) * Number(i.dataset.sim), 0) / 12;
+    out.textContent = total.toFixed(2).replace(".", ",") + (filled.length < 3 ? " (notes manquantes comptées 0)" : "");
+  }
+
   // ---------- Messagerie ----------
   // Un message : { kind: "message", from, to: "groupe" | id, text, at }.
   // Lu / non lu : chacune a sa fiche "read-<id>" avec, par conversation, la date du dernier message lu.
@@ -747,13 +834,26 @@
   }
 
   document.addEventListener("click", async e => {
-    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-conv],[data-filter-person],[data-filter-statut],[data-filter-validation]");
+    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-conv],[data-guide-cat],[data-guide-open],[data-add-theory],[data-filter-person],[data-filter-statut],[data-filter-validation]");
     if (!t) return;
     if (t.dataset.view) { e.preventDefault(); setView(t.dataset.view); return; }
     if (t.dataset.new) { openForm(t.dataset.new); return; }
     if (t.dataset.edit) { const it = Store.get(t.dataset.edit); if (it) openForm(it.kind, it.id); return; }
     if (t.dataset.me) { state.me = t.dataset.me; writePref(ME_KEY, state.me); closeModal(); render(); checkInbox(); return; }
     if (t.dataset.conv) { openConv(t.dataset.conv); return; }
+    if (t.dataset.guideCat !== undefined) { state.guideCat = t.dataset.guideCat; render(); return; }
+    if (t.dataset.guideOpen) {
+      state.guideOpen.add(t.dataset.guideOpen);
+      state.guideCat = "";
+      setView("guide");
+      document.getElementById(t.dataset.guideOpen)?.scrollIntoView({ block: "start" });
+      return;
+    }
+    if (t.dataset.addTheory !== undefined) {
+      const th = GUIDE_THEORIES[Number(t.dataset.addTheory)];
+      await Store.save({ kind: "concept", nom: th.nom, references: th.auteurs, dimensions: th.idee, definition: "", statut: "todo", responsable: "", validation: "attente", by: state.me });
+      return;
+    }
     if (t.dataset.filterPerson !== undefined) { state.filters.person = t.dataset.filterPerson; render(); return; }
     if (t.dataset.filterStatut !== undefined) { state.filters.statut = t.dataset.filterStatut; render(); return; }
     if (t.dataset.filterValidation !== undefined) { state.filters.validation = t.dataset.filterValidation; render(); return; }
@@ -785,6 +885,11 @@
     }
   });
 
+  document.addEventListener("toggle", e => {
+    const id = e.target.dataset && e.target.dataset.guide;
+    if (id) e.target.open ? state.guideOpen.add(id) : state.guideOpen.delete(id);
+  }, true);
+
   document.addEventListener("submit", async e => {
     const f = e.target;
     if (f.dataset.form) { e.preventDefault(); submitForm(f); }
@@ -810,6 +915,8 @@
       if (it) await Store.save({ ...it, [el.dataset.key]: el.value, by: state.me || it.by || "" });
     } else if (el.dataset.setting) {
       await Store.save({ id: "setting-" + el.dataset.setting, kind: "setting", value: el.value, by: state.me });
+    } else if (el.dataset.redac) {
+      await Store.save({ id: "redac-" + el.dataset.redac, kind: "redac", value: el.value, by: state.me });
     } else if (el.dataset.pitch) {
       await Store.save({ id: "pitch-" + el.dataset.pitch, kind: "pitch", value: el.value, by: state.me });
     }
@@ -818,6 +925,12 @@
   let searchTimer;
   document.addEventListener("input", e => {
     if (e.target.dataset.chat !== undefined) { state.drafts[state.conv] = e.target.value; return; }
+    if (e.target.dataset.sim) { updateSim(); return; }
+    if (e.target.dataset.redac) {
+      const wc = document.querySelector(`[data-wc="${e.target.dataset.redac}"]`);
+      if (wc) { const n = wordCount(e.target.value); wc.textContent = n + " mots"; wc.classList.toggle("late", n > 0 && (n < 100 || n > 150)); }
+      return;
+    }
     if (e.target.dataset.search === undefined) return;
     clearTimeout(searchTimer);
     const value = e.target.value;
@@ -842,7 +955,7 @@
   // Ne pas écraser ce que l'utilisatrice est en train de taper quand une mise à jour arrive
   Store.onChange(() => {
     const active = document.activeElement;
-    const typing = active && (active.dataset.pitch || active.dataset.setting || active.dataset.search !== undefined) && $("#main").contains(active);
+    const typing = active && (active.dataset.pitch || active.dataset.setting || active.dataset.redac || active.dataset.sim || active.dataset.search !== undefined) && $("#main").contains(active);
     if ($("#modal").classList.contains("open") || typing) { state.stale = true; renderNav(); return; }
     render();
     checkInbox();

@@ -384,3 +384,22 @@ window.PITCH_FIELDS = [
 
   window.SEED_BATCHES.push({ flag: "meta-seed-biblio-v1", items });
 })();
+
+// ---------- Tâches ajoutées depuis les fiches du cours Boostcamp (ajoutées une seule fois) ----------
+(function buildGuideSeed() {
+  const items = [];
+  const t = (phase, titre, echeance, opts = {}) =>
+    items.push({ id: "seed-g" + String(items.length + 1).padStart(2, "0"), kind: "task", phase, titre, echeance, statut: "todo", responsable: "", piste: "commun", ...opts });
+
+  t("p1", "Installer Zotero et créer une bibliothèque de groupe partagée", "2026-10-16", { responsable: "toutes", details: "Tutoriels dans l'onglet Guide → Ressources." });
+  t("p3", "Tableau de synthèse de la revue de littérature", "2026-12-18", { details: "Colonnes : auteurs (APA), théorie, méthode, principaux résultats, limites. Sert à repérer les « gaps » qui justifient notre recherche." });
+  t("p3", "Dessiner le modèle conceptuel (ou le pré-modèle)", "2027-01-08", { details: "Une flèche = une hypothèse numérotée avec son signe ; VI à gauche, VD à droite. Voir Guide → Revue de littérature." });
+  t("p4", "Choisir le plan : 3 parties ou 4 chapitres", "2027-02-05", { details: "Selon l'équilibre des parties (Guide → Forme & plan). Titres numérotés sur 3 niveaux maximum." });
+  t("p4", "Choisir le logiciel d'analyse", "2027-02-12", { details: "Quanti : Jamovi (gratuit) ou SPSS. Quali : IRaMuTeQ (gratuit), NVivo, MAXQDA…" });
+  t("p4", "Lire le chapitre Jolibert & Jourdan (2006), lecture obligatoire", "2027-02-05", { piste: "quanti", responsable: "toutes" });
+  t("p4", "Préparer l'attestation de confidentialité pour les entretiens en entreprise", "2027-02-12", { piste: "quali" });
+  t("p4", "Rédiger le dictionnaire thématique (thèmes, sous-thèmes, définitions, verbatims)", "2027-04-02", { piste: "quali" });
+  t("p5", "Rédiger contributions théoriques et managériales, limites et voies de recherche", "2027-04-30", { details: "Environ 6 à 8 pages selon la structure type. Contributions théoriques d'abord, limites expliquées avec leur effet sur les résultats." });
+
+  window.SEED_BATCHES.push({ flag: "meta-seed-guide-v1", items });
+})();

@@ -10,12 +10,12 @@ const FIELDS = ["id", "titre", "auteurs", "annee", "type", "revue", "concepts", 
 
 const SYSTEM = `Tu es l'assistant de trois étudiantes qui écrivent un mémoire de recherche (INSEEC) sur cette problématique : « Dans un contexte de scepticisme croissant des consommateurs envers les allégations santé, dans quelle mesure les labels et certifications parviennent-ils encore à agir comme des signaux crédibles capables de restaurer la confiance envers la marque ? »
 
-On te donne leur bibliographie (liste JSON d'articles déjà enregistrés) et une question. Trouve les articles de cette liste qui aident vraiment à répondre, du plus utile au moins utile (8 au maximum). Ne cite jamais un article absent de la liste et n'invente rien sur leur contenu : appuie-toi uniquement sur les champs fournis.
+On te donne leur bibliographie (liste JSON d'articles déjà enregistrés), les fiches de leur guide du mémoire (consignes officielles du cours, ids commençant par "guide-") et une question. Trouve les articles et/ou les fiches qui aident vraiment à répondre, du plus utile au moins utile (8 au maximum). Pour une question de méthode ou de consigne, appuie-toi sur les fiches du guide et résume la réponse dans "answer". Ne cite jamais un élément absent des listes et n'invente rien sur leur contenu : appuie-toi uniquement sur les champs fournis.
 
 Réponds uniquement avec un objet JSON, sans texte autour :
 {"answer": "1 à 3 phrases en français, tutoiement", "results": [{"id": "id exact de l'article", "reason": "une phrase sur ce que l'article apporte à la question"}]}
 
-Si aucun article ne convient, laisse "results" vide et propose dans "answer" des mots-clés (français et anglais) à chercher sur Google Scholar ou Cairn.`;
+Si rien ne convient, laisse "results" vide et propose dans "answer" des mots-clés (français et anglais) à chercher sur Google Scholar ou Cairn.`;
 
 const client = new Anthropic(); // lit ANTHROPIC_API_KEY
 
@@ -41,8 +41,11 @@ export default async function handler(req, res) {
 
   const question = String(req.body?.question || "").trim().slice(0, MAX_QUESTION);
   const articles = Array.isArray(req.body?.articles) ? req.body.articles.slice(0, MAX_ARTICLES).map(clean) : [];
+  const guide = Array.isArray(req.body?.guide)
+    ? req.body.guide.slice(0, 80).map(g => ({ id: String(g.id || ""), titre: String(g.titre || "").slice(0, 200), texte: String(g.texte || "").slice(0, 2500) }))
+    : [];
   if (!question) return res.status(400).json({ error: "Question vide" });
-  if (!articles.length) return res.status(200).json({ answer: "La bibliographie est vide pour l'instant : ajoutez des articles et je pourrai les retrouver.", results: [] });
+  if (!articles.length && !guide.length) return res.status(200).json({ answer: "La bibliographie est vide pour l'instant : ajoutez des articles et je pourrai les retrouver.", results: [] });
 
   try {
     const response = await client.beta.messages.create({
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
       system: SYSTEM,
       messages: [{
         role: "user",
-        content: `Bibliographie :\n${JSON.stringify(articles)}\n\nQuestion : ${question}`,
+        content: `Bibliographie :\n${JSON.stringify(articles)}\n\nFiches du guide du mémoire :\n${JSON.stringify(guide)}\n\nQuestion : ${question}`,
       }],
     });
 
@@ -64,7 +67,7 @@ export default async function handler(req, res) {
     }
     const text = response.content.filter(b => b.type === "text").map(b => b.text).join("");
     const data = parseJson(text);
-    const known = new Set(articles.map(a => a.id));
+    const known = new Set([...articles.map(a => a.id), ...guide.map(g => g.id)]);
     const results = (Array.isArray(data.results) ? data.results : [])
       .filter(r => r && known.has(r.id))
       .map(r => ({ id: r.id, reason: String(r.reason || "") }));
