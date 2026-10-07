@@ -405,3 +405,8 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
   .counters input, .counters input[type="number"] { width: 100%; }
   .counters label { flex: 1; }
 }
+
+/* Fiche de lecture complète sur la carte d'un article */
+.fiche { margin: 12px 0 0; font-size: 14px; }
+.fiche summary { cursor: pointer; font-weight: 500; }
+.fiche p { white-space: pre-line; margin: 10px 0 0; }
