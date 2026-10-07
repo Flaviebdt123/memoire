@@ -329,7 +329,8 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
 [data-quick-msg] textarea { margin-bottom: 8px; }
 
 /* Assistant */
-.assistant-btn { position: fixed; right: 24px; bottom: 108px; z-index: 8; display: inline-flex; gap: 8px; align-items: center; font: 500 11.5px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; padding: 13px 18px; border: 1px solid var(--text); background: var(--text); color: var(--bg); cursor: pointer; }
+.assistant-btn { display: flex; gap: 8px; align-items: center; justify-content: center; font: 500 11.5px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; padding: 13px 18px; border: 1px solid var(--text); background: var(--text); color: var(--bg); cursor: pointer; }
+.assistant-btn:focus-visible { outline: 1px solid var(--text); outline-offset: 2px; }
 .assistant-btn:hover, .assistant-btn.on { background: var(--bg); color: var(--text); }
 .assistant { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); z-index: 9; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--line-strong); }
 .assistant[hidden] { display: none; }
@@ -383,7 +384,7 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
   .step-banner { flex-direction: column; align-items: flex-start; }
   .step summary { flex-wrap: wrap; }
   .guide-points, .guide-src { padding-left: 22px; }
-  .assistant-btn { right: 16px; bottom: 104px; padding: 11px 14px; }
+  .assistant-btn { padding: 10px 14px; align-self: flex-start; }
   .chat { grid-template-columns: 1fr; height: auto; }
   .conv-list { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
   .conv { border-bottom: 0; border-right: 1px solid var(--line); padding: 10px 14px; }

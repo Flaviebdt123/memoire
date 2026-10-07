@@ -89,7 +89,9 @@
   btn.className = "assistant-btn";
   btn.setAttribute("aria-expanded", "false");
   btn.innerHTML = `<span aria-hidden="true">✦</span> Assistant`;
-  document.body.appendChild(btn);
+  // Dans le menu de gauche (sous la navigation) : accessible partout sans recouvrir le contenu.
+  const nav = document.querySelector("#nav");
+  if (nav) nav.after(btn); else document.body.appendChild(btn);
 
   const panel = document.createElement("aside");
   panel.className = "assistant";
