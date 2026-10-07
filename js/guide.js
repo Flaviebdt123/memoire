@@ -288,3 +288,92 @@
     ] },
   ];
 })();
+
+// ---------- Parcours pas à pas ----------
+// Chaque étape regroupe les tâches de la feuille de route (par phase et, si besoin, par date),
+// ce qu'on peut rédiger à ce moment-là, les fiches utiles et le livrable.
+(function () {
+  window.GUIDE_METHODE = [
+    "Un seul document partagé « Mémoire » (Word en ligne ou Google Docs), avec dès maintenant tous les titres du plan type : chaque partie a sa place, même vide.",
+    "On écrit au fil de l'eau : article lu → fiche dans Bibliographie (apport + citation avec page) → paragraphe dans le document. Rien n'attend décembre.",
+    "Une rédactrice principale par partie (onglet Rédaction) et une relectrice différente. On met à jour les pages rédigées chaque semaine.",
+    "On cite au moment où l'on écrit (Zotero), jamais « à la fin » : c'est là que naissent les oublis et le plagiat involontaire.",
+    "Un point d'équipe par semaine dans Messages → Groupe : ce qui est fait, ce qui bloque, la répartition de la semaine suivante.",
+  ];
+
+  window.GUIDE_STEPS = [
+    { id: "step-1", titre: "Démarrer et cadrer le sujet", debut: "2026-09-01", fin: "2026-10-30", phases: ["p1"],
+      objectif: "S'organiser, lire les premiers articles et formuler une problématique défendable dans le pitch.",
+      rediger: [
+        "Créer le document partagé avec le plan type (3 parties ou 4 chapitres) et la page de garde.",
+        "Chaque article lu : remplir sa fiche dans Bibliographie. Ce sont les briques de la revue de littérature.",
+        "Le pitch est le premier brouillon de l'introduction : contexte et enjeux (§ 1), problématique et objectifs (§ 2).",
+      ],
+      parties: ["Introduction", "Revue de littérature"],
+      fiches: ["guide-jalons", "docs-syllabus", "guide-problematique", "docs-problematisation", "guide-plan", "guide-bibliographie", "guide-rl-methode"],
+      livrable: "Pitch déposé sur Boostcamp (30 oct.)" },
+    { id: "step-2", titre: "Tuteur et problématique validée", debut: "2026-10-31", fin: "2026-12-04", phases: ["p2"],
+      objectif: "Présenter le pitch au tuteur, faire valider la problématique et bâtir le plan de la revue de littérature.",
+      rediger: [
+        "Après chaque échange, noter retours et décisions dans l'onglet Tuteur.",
+        "Mettre la problématique validée en tête du document : elle devient le titre du mémoire.",
+        "Plan détaillé de la revue de littérature : un sous-titre par concept (scepticisme, allégations santé, labels et certification, théorie du signal, crédibilité, confiance).",
+        "Commencer les définitions dans l'onglet Concepts : 2 ou 3 définitions académiques confrontées par concept.",
+      ],
+      parties: ["Revue de littérature"],
+      fiches: ["guide-problematique", "docs-concepts", "guide-rl-methode", "guide-citations", "docs-plagiat"],
+      livrable: "Problématique validée par le tuteur" },
+    { id: "step-3", titre: "Revue de littérature intermédiaire", debut: "2026-12-05", fin: "2027-01-18", phases: ["p3"],
+      objectif: "Rédiger au moins 8 pages qui définissent les concepts et aboutissent aux hypothèses ou propositions.",
+      rediger: [
+        "Concept par concept : définition retenue → contenu théorique (dimensions) → argumentaire → H ou P. Une rédactrice par axe, relecture croisée.",
+        "Rédiger la présentation du sujet et la justification de la problématique : elle resservira dans l'introduction finale.",
+        "Dessiner le modèle conceptuel ou le pré-modèle à partir des H/P.",
+        "Ce rendu devient la partie 1 du mémoire : il sera enrichi ensuite (10 pages minimum) avec les retours du tuteur.",
+      ],
+      parties: ["Revue de littérature"],
+      fiches: ["guide-rl-intermediaire", "docs-rl-seance2", "docs-concepts", "guide-hypotheses", "guide-propositions", "guide-modele", "docs-ecriture"],
+      livrable: "Revue de littérature intermédiaire (18 janv. 2027, coef. 2)" },
+    { id: "step-4", titre: "Préparer l'étude terrain", debut: "2027-01-19", fin: "2027-02-28", phases: ["p4"], avant: "2027-02-28",
+      objectif: "Choisir le plan, construire l'instrument de collecte (questionnaire ou guide d'entretien) et le faire valider.",
+      rediger: [
+        "Rédiger la méthodologie avant de collecter : démarche et justification, population, échantillon, instrument.",
+        "Quanti : tableau des variables avec leurs échelles, leurs sources et leur alpha. Quali : lien entre chaque proposition et les questions du guide.",
+        "Intégrer les retours du tuteur dans la revue de littérature.",
+        "Mettre le questionnaire ou le guide d'entretien en annexe.",
+      ],
+      parties: ["Étude empirique", "Annexes"],
+      fiches: ["guide-operationnalisation", "guide-questionnaire", "guide-echantillon", "guide-guide-entretien", "guide-plan"],
+      livrable: "Questionnaire ou guide d'entretien validé par le tuteur" },
+    { id: "step-5", titre: "Collecter et analyser", debut: "2027-03-01", fin: "2027-04-23", phases: ["p4"], apres: "2027-02-28",
+      objectif: "Recueillir les données, les analyser et rédiger les résultats et la discussion.",
+      rediger: [
+        "Suivre la collecte dans l'onglet Terrain (réponses ou entretiens).",
+        "Rédiger les résultats au fil des analyses : profil de l'échantillon d'abord, puis chaque H ou P, avec tableaux ou verbatims.",
+        "Rédiger la discussion hypothèse par hypothèse, en la reliant aux articles de la revue de littérature.",
+      ],
+      parties: ["Étude empirique", "Annexes"],
+      fiches: ["guide-entretiens", "guide-codage", "guide-stats", "guide-discussion"],
+      livrable: "Base de données ou retranscriptions et audios prêts à déposer" },
+    { id: "step-6", titre: "Rédiger la fin et assembler", debut: "2027-04-24", fin: "2027-05-24", phases: ["p5"],
+      objectif: "Écrire préconisations, contributions et conclusion, puis finaliser et déposer.",
+      rediger: [
+        "Préconisations : une recommandation par résultat clé.",
+        "Contributions, limites et voies de recherche, puis la conclusion.",
+        "Réécrire l'introduction en dernier (4 paragraphes), puis résumé FR/EN, remerciements et sommaire paginé.",
+        "Relecture globale : mêmes termes partout, chaque citation dans la bibliographie, mise en forme du guide.",
+      ],
+      parties: ["Préconisations managériales", "Conclusion", "Introduction", "Résumé FR / EN", "Bibliographie"],
+      fiches: ["guide-preconisations", "guide-contributions", "guide-conclusion", "guide-introduction", "guide-resume", "docs-ecriture", "guide-depot"],
+      livrable: "Mémoire déposé sur Boostcamp (24 mai 2027, coef. 4)" },
+    { id: "step-7", titre: "Préparer la soutenance", debut: "2027-05-25", fin: "2027-07-02", phases: ["p6"],
+      objectif: "Construire le support et s'entraîner aux questions du jury.",
+      rediger: [
+        "Support : une diapositive par grande partie, avec le modèle, les résultats clés et les préconisations.",
+        "Lister les questions probables du jury et préparer une réponse courte pour chacune.",
+      ],
+      parties: [],
+      fiches: ["guide-soutenance", "guide-notes"],
+      livrable: "Soutenance (28 juin – 2 juillet 2027, coef. 6)" },
+  ];
+})();

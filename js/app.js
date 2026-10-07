@@ -12,6 +12,7 @@
     conv: "groupe",
     drafts: {},
     guideCat: "",
+    guideMode: readPref("memoire-guide-mode") || "parcours",
     guideOpen: new Set(),
   };
 
@@ -175,6 +176,11 @@
         <div class="eyebrow">Problématique</div>
         <p>${esc((Store.get("pitch-problematique") || {}).value || PROBLEMATIQUE)}</p>
       </section>
+
+      ${(() => { const st = currentStep(); const n = GUIDE_STEPS.indexOf(st) + 1; return `<section class="card step-banner">
+        <div><div class="eyebrow">Étape en cours · ${n} sur ${GUIDE_STEPS.length}</div><h2 class="start-title">${esc(st.titre)}</h2><p class="muted small">${esc(st.objectif)} Livrable : ${esc(st.livrable)}.</p></div>
+        <button class="btn primary" data-view="guide">Voir quoi faire</button>
+      </section>`; })()}
 
       <section class="stats">
         <div class="card stat"><span class="stat-label">Avancement global</span><span class="stat-value">${pct} %</span><div class="bar"><i style="width:${pct}%"></i></div><span class="muted small">${done} tâches terminées sur ${tasks.length}</span></div>
@@ -497,15 +503,103 @@
         <ul class="res-list">${g.liens.map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join("")}</ul></div>`).join("")}</div>`;
   }
 
+  // Parcours pas à pas : étapes datées, tâches liées, quoi rédiger, fiches utiles.
+  function stepTasks(step) {
+    return Store.all("task").filter(t => step.phases.includes(t.phase) && trackVisible(t.piste)
+      && (!step.avant || !t.echeance || t.echeance <= step.avant)
+      && (!step.apres || (t.echeance && t.echeance > step.apres)));
+  }
+
+  function currentStep() {
+    const today = todayISO();
+    return GUIDE_STEPS.find(s => today <= s.fin) || GUIDE_STEPS[GUIDE_STEPS.length - 1];
+  }
+
+  function taskRow(t) {
+    const d = t.echeance ? daysUntil(t.echeance) : null;
+    const late = t.statut !== "done" && d !== null && d < 0;
+    return `<div class="trow ${t.statut === "done" ? "is-done" : ""}">
+      <div class="tcell date ${late ? "late" : ""}">${t.echeance ? (late ? relDays(t.echeance) : fmtDate(t.echeance)) : "—"}</div>
+      <div class="tcell grow row-click" data-edit="${esc(t.id)}"><span class="ttitle">${esc(t.titre)}</span>${t.details ? `<span class="tdetail">${esc(t.details)}</span>` : ""}</div>
+      <div class="tcell">${inlineSelect(t, "responsable")}</div>
+      <div class="tcell">${inlineSelect(t, "statut")}</div>
+    </div>`;
+  }
+
+  function parcours() {
+    const cur = currentStep();
+    if (!state.stepsInit) { state.stepsInit = true; state.guideOpen.add(cur.id); }
+    const todo = Store.all("task").filter(t => t.statut !== "done" && trackVisible(t.piste) && t.echeance)
+      .sort((a, b) => a.echeance.localeCompare(b.echeance)).slice(0, 5);
+    const chapitres = Store.all("chapitre");
+    const fiche = id => GUIDE_SECTIONS.find(s => s.id === id);
+
+    const steps = GUIDE_STEPS.map((st, i) => {
+      const ts = stepTasks(st).sort((a, b) => (a.echeance || "9").localeCompare(b.echeance || "9"));
+      const done = ts.filter(t => t.statut === "done").length;
+      const pct = ts.length ? Math.round(done / ts.length * 100) : 0;
+      const etat = st === cur ? "en cours" : todayISO() > st.fin ? (done === ts.length ? "terminée" : "en retard") : "à venir";
+      const tone = { "en cours": "warn", "terminée": "ok", "en retard": "bad", "à venir": "neutral" }[etat];
+      const parts = st.parties.map(nom => { const c = chapitres.find(x => x.titre === nom); return `<button class="tag tag-link" data-view="redaction">${esc(nom)}${c && c.pages ? ` · ${c.pages} p.` : ""}</button>`; }).join("");
+      return `<details class="card step ${st === cur ? "step-current" : ""}" id="${st.id}" data-guide="${st.id}" ${state.guideOpen.has(st.id) ? "open" : ""}>
+        <summary>
+          <span class="step-num">${String(i + 1).padStart(2, "0")}</span>
+          <span class="step-head"><span class="guide-title">${esc(st.titre)}</span><span class="muted small">${fmtDate(st.debut)} → ${fmtDate(st.fin)} · ${done}/${ts.length} tâches</span></span>
+          <span class="badge tone-${tone}">${etat}</span>
+        </summary>
+        <div class="step-body">
+          <div class="bar thin"><i style="width:${pct}%"></i></div>
+          <p class="step-goal">${esc(st.objectif)}</p>
+          <h3 class="step-h">À faire</h3>
+          ${ts.length ? `<div class="table">${ts.map(taskRow).join("")}</div>` : `<p class="muted small">Aucune tâche pour cette étape.</p>`}
+          <div class="step-grid">
+            <div>
+              <h3 class="step-h">Rédiger au fur et à mesure</h3>
+              <ul class="guide-points step-list">${st.rediger.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+              ${parts ? `<p class="small muted">Parties du mémoire concernées :</p><div class="chips-wrap">${parts}</div>` : ""}
+            </div>
+            <div>
+              <h3 class="step-h">Fiches utiles</h3>
+              <div class="chips-wrap">${st.fiches.map(fiche).filter(Boolean).map(f => `<button class="tag tag-link" data-guide-open="${f.id}">${esc(f.titre)}</button>`).join("")}</div>
+              <p class="step-livrable"><span class="eyebrow">Livrable</span> ${esc(st.livrable)}</p>
+            </div>
+          </div>
+        </div>
+      </details>`;
+    }).join("");
+
+    return `<section class="start-grid">
+        <div class="card start-now">
+          <div class="eyebrow">Par où commencer</div>
+          <h2 class="start-title">Étape ${GUIDE_STEPS.indexOf(cur) + 1} · ${esc(cur.titre)}</h2>
+          <p class="muted small">${esc(cur.objectif)}</p>
+          ${todo.length ? `<div class="table">${todo.map(taskRow).join("")}</div>` : `<p class="muted">Tout est à jour.</p>`}
+          <p class="small muted">Les 5 prochaines tâches non terminées, toutes étapes confondues (les retards d'abord).</p>
+        </div>
+        <div class="card methode">
+          <div class="eyebrow">Comment on rédige</div>
+          <ol>${GUIDE_METHODE.map(m => `<li>${esc(m)}</li>`).join("")}</ol>
+        </div>
+      </section>
+      <h2 class="section-title">Les étapes, dans l'ordre</h2>
+      <div class="guide-list">${steps}</div>`;
+  }
+
   function guide() {
+    const mode = state.guideMode;
+    const modeSeg = `<div class="seg mode-seg" role="group" aria-label="Affichage"><button class="${mode === "parcours" ? "on" : ""}" data-guide-mode="parcours">Parcours pas à pas</button><button class="${mode === "fiches" ? "on" : ""}" data-guide-mode="fiches">Toutes les fiches</button></div>`;
+    const head = pageHead("Guide du mémoire", "Par où commencer, quoi rédiger à chaque étape, et toutes les consignes du cours (Boostcamp et documents de séance, sans les quiz).",
+      `<a class="btn" href="${BOOSTCAMP_COURSE}" target="_blank" rel="noopener">Ouvrir Boostcamp</a>`) + modeSeg;
+    return head + (mode === "parcours" ? parcours() : fiches());
+  }
+
+  function fiches() {
     const cat = state.guideCat;
     const q = (state.filters.search || "").toLowerCase();
     const secs = GUIDE_SECTIONS.filter(s => (!cat || s.cat === cat) && (!q || (s.titre + " " + s.points.join(" ")).toLowerCase().includes(q)));
     const seg = `<div class="seg" role="group" aria-label="Thèmes"><button class="${!cat ? "on" : ""}" data-guide-cat="">Tout</button>${GUIDE_CATEGORIES.map(c => `<button class="${cat === c.id ? "on" : ""}" data-guide-cat="${c.id}">${esc(c.label)}</button>`).join("")}</div>`;
     const all = !cat && !q;
-    return pageHead("Guide du mémoire", "Synthèse des consignes du cours « Méthodologie de recherche » sur Boostcamp (guide 2026-2027 et fiches des modules, sans les quiz). Les documents originaux restent accessibles via les liens « Source ».",
-      `<a class="btn" href="${BOOSTCAMP_COURSE}" target="_blank" rel="noopener">Ouvrir Boostcamp</a>`) +
-      (all ? `<section class="card attention"><div class="eyebrow">Points d'attention</div><ul>${GUIDE_ATTENTION.map(a => `<li>${esc(a)}</li>`).join("")}</ul></section>` : "") +
+    return (all ? `<section class="card attention"><div class="eyebrow">Points d'attention</div><ul>${GUIDE_ATTENTION.map(a => `<li>${esc(a)}</li>`).join("")}</ul></section>` : "") +
       `<div class="toolbar">${seg}<input type="search" class="search" placeholder="Rechercher une consigne…" value="${esc(state.filters.search)}" data-search></div>` +
       (secs.length ? `<div class="guide-list">${secs.map(guideSection).join("")}</div>` : `<p class="empty">Aucune fiche ne correspond.</p>`) +
       (all || cat === "calendrier" ? simulateur() : "") +
@@ -834,7 +928,7 @@
   }
 
   document.addEventListener("click", async e => {
-    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-conv],[data-guide-cat],[data-guide-open],[data-add-theory],[data-filter-person],[data-filter-statut],[data-filter-validation]");
+    const t = e.target.closest("[data-view],[data-new],[data-edit],[data-action],[data-me],[data-conv],[data-guide-cat],[data-guide-mode],[data-guide-open],[data-add-theory],[data-filter-person],[data-filter-statut],[data-filter-validation]");
     if (!t) return;
     if (t.dataset.view) { e.preventDefault(); setView(t.dataset.view); return; }
     if (t.dataset.new) { openForm(t.dataset.new); return; }
@@ -842,9 +936,11 @@
     if (t.dataset.me) { state.me = t.dataset.me; writePref(ME_KEY, state.me); closeModal(); render(); checkInbox(); return; }
     if (t.dataset.conv) { openConv(t.dataset.conv); return; }
     if (t.dataset.guideCat !== undefined) { state.guideCat = t.dataset.guideCat; render(); return; }
+    if (t.dataset.guideMode) { state.guideMode = t.dataset.guideMode; writePref("memoire-guide-mode", state.guideMode); render(); return; }
     if (t.dataset.guideOpen) {
       state.guideOpen.add(t.dataset.guideOpen);
       state.guideCat = "";
+      state.guideMode = "fiches";
       setView("guide");
       document.getElementById(t.dataset.guideOpen)?.scrollIntoView({ block: "start" });
       return;
