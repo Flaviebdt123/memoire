@@ -304,6 +304,7 @@
             ${a.apport ? `<p class="apport">${esc(a.apport)}</p>` : ""}
             ${a.commentaireProf ? `<p class="prof-comment"><b>Prof :</b> ${esc(a.commentaireProf)}</p>` : ""}
           </div>
+          ${(a.apport || "").length > 300 ? `<details class="fiche"><summary>Lire la fiche complète</summary><p>${esc(a.apport)}</p>${a.citation ? `<p class="muted small">${esc(a.citation)}</p>` : ""}</details>` : ""}
           <div class="art-foot">
             <label class="small">Validation prof ${inlineSelect(a, "validation")}</label>
             <label class="small">Lecture ${inlineSelect(a, "lecture")}</label>
