@@ -18,5 +18,7 @@ drop policy if exists "equipe ecriture" on public.items;
 create policy "equipe lecture" on public.items for select to anon using (true);
 create policy "equipe ecriture" on public.items for all to anon using (true) with check (true);
 
+grant select, insert, update, delete on public.items to anon;
+
 -- Mises à jour en direct entre les 3 navigateurs.
 alter publication supabase_realtime add table public.items;
