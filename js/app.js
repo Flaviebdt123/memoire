@@ -430,7 +430,25 @@
             <div class="tcell">${inlineSelect(c, "statut")}</div>
           </div>`;
         }).join("")}
-      </div>`;
+      </div>` + planSection();
+  }
+
+  // Plan de la revue de littérature (affiché dans Rédaction)
+  function planSection() {
+    const cmp = (a, b) => (a.numero || "").localeCompare(b.numero || "", "fr", { numeric: true });
+    const rows = Store.all("plan").sort(cmp);
+    return `<div class="section-head"><h2>Plan de la revue de littérature <span class="muted small">proposition à ajuster selon les lectures</span></h2><button class="btn primary" data-new="plan">+ Sous-partie</button></div>
+      <p class="hint-line">Sur le modèle de l'exemple de la prof : une partie par concept (définition, approches, mesures, antécédents / conséquences), puis une partie qui relie les concepts et pose les hypothèses.</p>
+      ${rows.length ? `<div class="table plan">${rows.map(r => {
+        const level = (r.numero || "").split(".").length;
+        return `<div class="trow plan-l${Math.min(level, 3)} ${r.statut === "done" ? "is-done" : ""}">
+          <div class="tcell grow row-click" data-edit="${esc(r.id)}" style="padding-left:${(level - 1) * 22}px">
+            <span class="ttitle">${esc(r.numero)}. ${esc(r.titre)}</span>${r.notes ? `<span class="tdetail">${esc(r.notes)}</span>` : ""}
+          </div>
+          <div class="tcell">${inlineSelect(r, "responsable")}</div>
+          <div class="tcell">${inlineSelect(r, "statut")}</div>
+        </div>`;
+      }).join("")}</div>` : `<p class="empty">Aucune partie dans le plan.</p>`}`;
   }
 
   // Tuteur

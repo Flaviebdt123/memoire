@@ -210,6 +210,17 @@ window.COLLECTIONS = {
     ],
   },
 
+  plan: {
+    label: "Partie du plan",
+    fields: [
+      { key: "numero", label: "Numéro", type: "text", required: true, hint: "1, 1.2, 2.2.1… (le nombre de points donne le niveau)" },
+      { key: "titre", label: "Titre", type: "text", required: true },
+      { key: "statut", label: "Statut", type: "select", options: STATUS, default: "todo" },
+      { key: "responsable", label: "Rédactrice", type: "person" },
+      { key: "notes", label: "Idées, auteurs à mobiliser", type: "textarea" },
+    ],
+  },
+
   echange: {
     label: "Échange avec le tuteur",
     fields: [
@@ -411,4 +422,40 @@ window.PITCH_FIELDS = [
   t("p5", "Rédiger contributions théoriques et managériales, limites et voies de recherche", "2027-04-30", { details: "Environ 6 à 8 pages selon la structure type. Contributions théoriques d'abord, limites expliquées avec leur effet sur les résultats." });
 
   window.SEED_BATCHES.push({ flag: "meta-seed-guide-v1", items });
+})();
+
+// Plan de la revue de littérature : proposition sur le modèle de l'exemple de la prof
+// (une partie par concept : définition, approches, mesures, antécédents/conséquences).
+(function () {
+  const rows = [
+    ["1", "Le scepticisme du consommateur envers les allégations santé"],
+    ["1.1", "Les allégations santé : définition et cadre réglementaire"],
+    ["1.2", "Le scepticisme du consommateur : définition et évolution du concept"],
+    ["1.3", "Les approches du scepticisme"],
+    ["1.3.1", "Le scepticisme comme trait durable de l'individu"],
+    ["1.3.2", "Le scepticisme lié à une situation ou à un message"],
+    ["1.4", "Les mesures du scepticisme"],
+    ["1.5", "Les antécédents et conséquences du scepticisme"],
+    ["2", "Les labels et certifications comme signaux"],
+    ["2.1", "Définition et typologie des labels (publics / privés, tierce partie / auto-déclarés)"],
+    ["2.2", "La théorie du signal appliquée au marketing"],
+    ["2.2.1", "L'asymétrie d'information entre marque et consommateur"],
+    ["2.2.2", "Le label comme signal de qualité"],
+    ["2.2.3", "Les conditions de crédibilité d'un signal"],
+    ["2.3", "Les limites des labels : prolifération et confusion"],
+    ["3", "La confiance envers la marque"],
+    ["3.1", "Définition et évolution de la notion"],
+    ["3.2", "Les dimensions de la confiance"],
+    ["3.3", "Les mesures de la confiance envers la marque"],
+    ["3.4", "Les antécédents de la confiance"],
+    ["4", "Articulation des concepts et hypothèses de recherche"],
+    ["4.1", "Labels et crédibilité perçue des allégations → H1"],
+    ["4.2", "Crédibilité perçue et confiance envers la marque → H2"],
+    ["4.3", "Le rôle modérateur du scepticisme → H3"],
+    ["4.4", "Le modèle conceptuel"],
+  ];
+  const items = rows.map(([numero, titre]) => ({
+    id: "seed-plan-" + numero.replace(/\./g, "-"), kind: "plan", numero, titre, statut: "todo", responsable: "", notes: "",
+  }));
+  window.SEED_BATCHES.push({ flag: "meta-seed-plan-v1", items });
 })();

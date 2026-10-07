@@ -410,3 +410,7 @@ select.inline.tone-neutral { background-color: var(--neutral-soft); color: var(-
 .fiche { margin: 12px 0 0; font-size: 14px; }
 .fiche summary { cursor: pointer; font-weight: 500; }
 .fiche p { white-space: pre-line; margin: 10px 0 0; }
+
+/* Plan de la revue de littérature */
+.plan .plan-l1 .ttitle { font-weight: 600; }
+.plan .plan-l3 .ttitle { font-weight: 400; }
