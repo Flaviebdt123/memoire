@@ -227,6 +227,15 @@ window.COLLECTIONS = {
   },
 };
 
+// ---------- Construire la problématique (méthode vue en cours, 5 étapes) ----------
+window.PROBLEMATIQUE_STEPS = [
+  { key: "pb1", label: "1. Décrire précisément le problème posé", hint: "Apporter une première définition succincte ; décrire les conséquences dans les entreprises." },
+  { key: "pb2", label: "2. Circonscrire son ampleur", hint: "Chiffres clés récents et sourcés : quelle ampleur au plan national ou international ? En quoi les solutions apportées jusqu'à maintenant sont-elles insatisfaisantes ?" },
+  { key: "pb3", label: "3. Clarifier le point de vue adopté", hint: "Du point de vue du client ? Du manager ? Et préciser la discipline des sciences de gestion : stratégie, RH, marketing…" },
+  { key: "pb4", label: "4. Identifier les 2 éléments mis en relation", hint: "Ex. : labels et certifications ↔ confiance envers la marque (et le rôle du scepticisme)." },
+  { key: "pb5", label: "5. Formuler votre question", hint: "Une question principale de recherche, 2 à 3 lignes maximum." },
+];
+
 // ---------- Pitch (annexe 3) ----------
 window.PITCH_FIELDS = [
   { key: "discipline", label: "Dans quelle discipline et sur quel sujet ?", hint: "Marketing, finance, RH… et le sujet visé." },

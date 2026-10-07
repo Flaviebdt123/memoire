@@ -260,8 +260,15 @@
 
   // Pitch
   function pitch() {
-    return pageHead("Pitch", "Trame de l'annexe 3, à remettre en ligne fin octobre puis à envoyer au tuteur. Les modifications sont enregistrées quand tu quittes un champ.") +
-      `<div class="pitch">${PITCH_FIELDS.map(f => {
+    return pageHead("Pitch", "D'abord construire la problématique (méthode du cours), puis remplir la trame de l'annexe 3, à remettre en ligne fin octobre. Les modifications sont enregistrées quand tu quittes un champ.") +
+      `<h2 class="section-title">Construire la problématique · méthode du cours</h2>` +
+      pitchFields(PROBLEMATIQUE_STEPS) +
+      `<h2 class="section-title">Pitch · annexe 3 du guide</h2>` +
+      pitchFields(PITCH_FIELDS);
+  }
+
+  function pitchFields(list) {
+    return `<div class="pitch">${list.map(f => {
         const it = Store.get("pitch-" + f.key) || {};
         const by = person(it.by);
         return `<div class="card pitch-field">
